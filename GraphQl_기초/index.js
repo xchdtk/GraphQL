@@ -1,5 +1,6 @@
 const database = require('./database')
 const { ApolloServer, gql } = require('apollo-server')
+const { equipments } = require('./database')
 const typeDefs = gql`
   type Query {
     teams: [Team]
@@ -7,15 +8,17 @@ const typeDefs = gql`
     equipments: [Equipment]
     supplies: [Supplies]
   }
+  type Mutation {
+    deleteEquipment(id: String): Equipment
+  }
 
   type Mutation {
     deleteEquipment(id: String): Equipment
-
     insertEquipment(
-      id: String,
-      used_by: String,
-      count: Int,
-      new_or_used: String
+        id: String,
+        used_by: String,
+        count: Int,
+        new_or_used: String
     ): Equipment
 
     editEquipment(
@@ -66,34 +69,35 @@ const resolvers = {
   },
 
   Mutation: {
-      deleteEquipment: (parent, args, context, info) => {
-          const deleted = database.equipments
-              .filter((equipment) => {
-                  return equipment.id === args.id
-              })[0]
-          database.equipments = database.equipments
-              .filter((equipment) => {
-                  return equipment.id !== args.id
-              })
-          return deleted
-      },
-
-      insertEquipment: (parent, args, context, info) => {   
-          database.equipments.push(args)
-          return args
-      },
-
-      editEquipment: (parent, args, context, info) => {
-        return database.equipments.filter((equipment) => {
-            return equipment.id === args.id
-        }).map((equipment) => {
-            Object.assign(equipment, args)
-            return equipment
+    deleteEquipment: (parent, args, context, info) => {
+      const deleted = database.equipments
+        .filter((equipment) => {
+          return equipment.id === args.id
         })[0]
+      
+      database.equipments = database.equipments
+        .filter((equipment) => {
+          return equipment.id !== args.id
+        })
+      return deleted
     },
-    // ...
-}
+
+    insertEquipment: (parent, args, context, info) => {
+      database.equipments.push(args)
+      return args
+    },
+
+    editEquipment: (parent, args, context, info) => {
+      return database.equipments.filter((equipment) => {
+        return equipment.id === args.id
+      }).map((equipment) => {
+        Object.assign(equipment, args)
+        return equipment
+      })[0]
+    }
+
   }
+}
 const server = new ApolloServer({ typeDefs, resolvers })
 server.listen().then(({ url }) => {
 console.log(`🚀  Server ready at ${url}`)
